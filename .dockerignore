@@ -1,0 +1,12 @@
+node_modules
+dist
+coverage
+tests
+infra
+.github
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+docs
