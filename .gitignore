@@ -1,0 +1,20 @@
+# dependencias
+node_modules/
+
+# build
+dist/
+coverage/
+
+# ambiente
+.env
+.env.*
+.DS_Store
+
+# terraform
+# O .terraform.lock.hcl e versionado de proposito: fixa os hashes do provider.
+infra/.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfvars
+!terraform.tfvars.example
+crash.log
