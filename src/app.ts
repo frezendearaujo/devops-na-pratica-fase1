@@ -1,5 +1,6 @@
 import express, { type Express } from 'express'
 
+import { createMetrics } from './metrics.js'
 import { TaskRepository } from './task-repository.js'
 import { TITLE_MAX_LENGTH } from './task.js'
 
@@ -29,11 +30,18 @@ function validateTitle(value: unknown): TitleValidation {
 
 export function createApp(repository: TaskRepository = new TaskRepository()): Express {
   const app = express()
+  const metrics = createMetrics()
 
   app.use(express.json())
+  app.use(metrics.middleware)
 
   app.get('/health', (_req, res) => {
     res.status(200).json({ status: 'ok' })
+  })
+
+  app.get('/metrics', async (_req, res) => {
+    res.set('Content-Type', metrics.registry.contentType)
+    res.status(200).send(await metrics.registry.metrics())
   })
 
   app.get('/tasks', (_req, res) => {

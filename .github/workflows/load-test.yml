@@ -1,0 +1,56 @@
+name: Teste de carga
+
+# Teste de carga sob demanda, no espirito da Aula 8. Fica fora do pipeline
+# principal de proposito: carga contra o free tier do Render nao deve rodar a
+# cada commit.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente alvo
+        type: choice
+        options: [staging, production]
+        default: staging
+      duration:
+        description: Duracao em segundos
+        default: '30'
+      connections:
+        description: Conexoes simultaneas
+        default: '10'
+
+jobs:
+  load:
+    name: Carga contra ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Acordar a instancia
+        env:
+          BASE_URL: ${{ inputs.environment == 'production' && vars.PRODUCTION_URL || vars.STAGING_URL }}
+        run: curl --silent --show-error --max-time 120 "${BASE_URL}/health" > /dev/null
+
+      - name: Executar a carga
+        env:
+          BASE_URL: ${{ inputs.environment == 'production' && vars.PRODUCTION_URL || vars.STAGING_URL }}
+        run: |
+          set -euo pipefail
+
+          npx --yes autocannon@8 \
+            --duration "${{ inputs.duration }}" \
+            --connections "${{ inputs.connections }}" \
+            --renderStatusCodes \
+            "${BASE_URL}/tasks" | tee resultado.txt
+
+      - name: Publicar o resultado no resumo
+        run: |
+          {
+            echo "### Teste de carga em ${{ inputs.environment }}"
+            echo
+            echo '```'
+            cat resultado.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,31 @@
+# Configuracao de scraping do Prometheus.
+#
+# O alvo local resolve pelo nome do servico do compose. Os alvos de staging e
+# producao ficam comentados porque o free tier do Render hiberna o servico e o
+# scraping constante o manteria acordado.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: tasks-api-local
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['tasks-api:3000']
+        labels:
+          environment: local
+
+  # - job_name: tasks-api-remoto
+  #   scheme: https
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets: ['tasks-api-staging.onrender.com']
+  #       labels:
+  #         environment: staging
+  #     - targets: ['tasks-api-production.onrender.com']
+  #       labels:
+  #         environment: production

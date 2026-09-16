@@ -1,0 +1,43 @@
+# Infraestrutura como codigo da plataforma de execucao.
+#
+# Declara os dois ambientes da aplicacao. Ambos consomem a mesma imagem
+# publicada no GitHub Container Registry pelo pipeline: nenhum dos servicos
+# constroi codigo, eles apenas executam o artefato ja testado.
+#
+# O pipeline aponta a tag exata de cada deploy pela API do Render, por isso a
+# atualizacao automatica fica desligada nos dois servicos.
+
+services:
+  - type: web
+    name: tasks-api-staging
+    runtime: image
+    plan: free
+    region: oregon
+    image:
+      url: ghcr.io/frezendearaujo/tasks-api:latest
+    autoDeploy: false
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: APP_ENVIRONMENT
+        value: staging
+
+  - type: web
+    name: tasks-api-production
+    runtime: image
+    plan: free
+    region: oregon
+    image:
+      url: ghcr.io/frezendearaujo/tasks-api:latest
+    autoDeploy: false
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: APP_ENVIRONMENT
+        value: production

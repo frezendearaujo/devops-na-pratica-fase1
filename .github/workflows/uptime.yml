@@ -1,0 +1,49 @@
+name: Monitoramento de disponibilidade
+
+# Sonda externa dos dois ambientes. O monitoramento embutido no Render observa
+# o container por dentro; esta verificacao olha de fora, do ponto de vista de
+# quem consome a API.
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: Verificar ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: staging
+            variable: STAGING_URL
+          - environment: production
+            variable: PRODUCTION_URL
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Health check e coleta de metricas
+        env:
+          BASE_URL: ${{ vars[matrix.variable] }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${BASE_URL}" ]]; then
+            echo "a variavel ${{ matrix.variable }} nao esta configurada"
+            exit 1
+          fi
+
+          # O free tier hiberna o servico, entao a primeira requisicao pode
+          # levar algumas dezenas de segundos para acordar a instancia.
+          code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 120 "${BASE_URL}/health")
+          latency=$(curl --silent --output /dev/null --write-out '%{time_total}' "${BASE_URL}/health")
+
+          {
+            echo "### ${{ matrix.environment }}"
+            echo
+            echo "- status do /health: ${code}"
+            echo "- tempo de resposta: ${latency}s"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          [[ "${code}" == "200" ]]

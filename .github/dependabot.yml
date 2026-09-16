@@ -1,0 +1,37 @@
+# Atualizacao automatica de dependencias.
+#
+# Mantem as versoes em dia sem intervencao manual. Cada atualizacao chega como
+# pull request e precisa passar pelo pipeline antes do merge, entao o risco de
+# regressao fica coberto pelos testes.
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      producao:
+        dependency-type: production
+      desenvolvimento:
+        dependency-type: development
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+
+  - package-ecosystem: terraform
+    directory: /infra
+    schedule:
+      interval: monthly

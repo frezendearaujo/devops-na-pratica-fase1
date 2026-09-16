@@ -1,0 +1,40 @@
+# Regras de alerta sobre as metricas expostas pela aplicacao.
+#
+# Os limiares acompanham as metricas que a Aula 6 trata como centrais:
+# disponibilidade, taxa de erro e tempo de resposta.
+
+groups:
+  - name: tasks-api
+    rules:
+      - alert: ServicoIndisponivel
+        expr: up{job="tasks-api-local"} == 0
+        for: 1m
+        labels:
+          severity: critica
+        annotations:
+          summary: A aplicacao parou de responder ao scraping
+          description: O alvo esta fora do ar ha mais de um minuto.
+
+      - alert: TaxaDeErroAlta
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.05
+        for: 5m
+        labels:
+          severity: alta
+        annotations:
+          summary: Mais de 5 por cento das requisicoes retornando erro de servidor
+          description: Avaliar rollback para a tag anterior da imagem.
+
+      - alert: LatenciaAlta
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+          ) > 1
+        for: 5m
+        labels:
+          severity: media
+        annotations:
+          summary: Percentil 95 do tempo de resposta acima de um segundo
+          description: Investigar carga e consumo de recursos do container.

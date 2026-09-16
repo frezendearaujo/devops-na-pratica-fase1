@@ -1,0 +1,48 @@
+# Orquestracao local dos containers.
+#
+# Sobe a aplicacao e um Prometheus que raspa o endpoint /metrics, reproduzindo
+# na maquina do desenvolvedor o mesmo par aplicacao e observabilidade que roda
+# em producao.
+#
+#   docker compose up -d --build
+#   curl http://localhost:8080/health
+#   curl http://localhost:8080/metrics
+#   open http://localhost:9090        # console do Prometheus
+#   docker compose down
+
+services:
+  tasks-api:
+    build: .
+    image: tasks-api:local
+    container_name: tasks-api
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      APP_ENVIRONMENT: local
+    ports:
+      - '8080:3000'
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('node:http').get('http://127.0.0.1:3000/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    depends_on:
+      tasks-api:
+        condition: service_healthy
+    volumes:
+      - ./monitoring:/etc/prometheus:ro
+    ports:
+      - '9090:9090'
+    restart: unless-stopped
