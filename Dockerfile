@@ -10,6 +10,14 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
+# --- Estagio de dependencias: apenas o que roda em producao ---
+FROM node:22-alpine AS deps
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci --omit=dev && npm cache clean --force
+
 # --- Estagio final: apenas o necessario para executar ---
 FROM node:22-alpine
 
@@ -18,9 +26,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+# Atualiza os pacotes do sistema e remove o npm da imagem de execucao. O
+# container so precisa do runtime do Node para rodar o processo, e um gerenciador
+# de pacotes em producao e superficie de ataque sem contrapartida.
+RUN apk --no-cache upgrade \
+  && rm -rf /usr/local/lib/node_modules/npm \
+  /usr/local/bin/npm \
+  /usr/local/bin/npx
 
+COPY package.json ./
+COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 
 USER node
