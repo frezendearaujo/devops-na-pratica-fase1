@@ -21,7 +21,7 @@ jobs:
           - environment: production
             variable: PRODUCTION_URL
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Health check e coleta de metricas
         env:
