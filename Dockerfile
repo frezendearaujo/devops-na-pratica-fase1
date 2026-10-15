@@ -1,5 +1,5 @@
 # --- Estagio de build: compila o TypeScript ---
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 
 WORKDIR /app
 
@@ -11,7 +11,7 @@ COPY src ./src
 RUN npm run build
 
 # --- Estagio de dependencias: apenas o que roda em producao ---
-FROM node:22-alpine AS deps
+FROM node:26-alpine AS deps
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # --- Estagio final: apenas o necessario para executar ---
-FROM node:22-alpine
+FROM node:26-alpine
 
 WORKDIR /app
 
